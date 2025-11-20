@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<title>My Simple E‑commerce</title>
+	<link rel="preconnect" href="https://fonts.googleapis.com" />
+	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+	<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+	<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+	<style>
+		/* page-specific helpers */
+		.hero {
+			background: linear-gradient(135deg, #e2f5e9, #f7fffb);
+		}
+		.product-card img {
+			object-fit: cover;
+			height: 180px;
+		}
+		.cursor-pointer { cursor: pointer; }
+		
+		/* Animations and lively effects */
+		@keyframes fadeInUp {
+			from {
+				opacity: 0;
+				transform: translateY(20px);
+			}
+			to {
+				opacity: 1;
+				transform: translateY(0);
+			}
+		}
+		
+		@keyframes bounce {
+			0%, 20%, 50%, 80%, 100% {
+				transform: translateY(0);
+			}
+			40% {
+				transform: translateY(-10px);
+			}
+			60% {
+				transform: translateY(-5px);
+			}
+		}
+		
+		@keyframes pulse {
+			0%, 100% {
+				transform: scale(1);
+			}
+			50% {
+				transform: scale(1.05);
+			}
+		}
+		
+		@keyframes confetti {
+			0% {
+				transform: translateY(0) rotate(0deg);
+				opacity: 1;
+			}
+			100% {
+				transform: translateY(500px) rotate(720deg);
+				opacity: 0;
+			}
+		}
+		
+		.success-animation {
+			animation: fadeInUp 0.5s ease-out, bounce 0.6s ease-out 0.5s;
+		}
+		
+		.pulse-animation {
+			animation: pulse 0.5s ease-in-out;
+		}
+		
+		/* Toast notification styles */
+		.toast-container {
+			position: fixed;
+			top: 20px;
+			right: 20px;
+			z-index: 9999;
+		}
+		
+		.toast-notification {
+			background: linear-gradient(135deg, #1c8f5c 0%, #25a76d 100%);
+			color: white;
+			padding: 15px 20px;
+			border-radius: 10px;
+			box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+			margin-bottom: 10px;
+			animation: fadeInUp 0.3s ease-out;
+			min-width: 300px;
+		}
+		
+		.toast-notification.success {
+			background: linear-gradient(135deg, #1c8f5c 0%, #119c54 100%);
+		}
+		
+		.toast-notification.error {
+			background: linear-gradient(135deg, #e63946 0%, #f3722c 100%);
+		}
+		
+		.toast-notification.info {
+			background: linear-gradient(135deg, #1c8f5c 0%, #0c6a3b 100%);
+		}
+		
+		/* Confetti container */
+		.confetti-container {
+			position: fixed;
+			top: 0;
+			left: 0;
+			width: 100%;
+			height: 100%;
+			pointer-events: none;
+			z-index: 9998;
+		}
+		
+		.confetti {
+			position: absolute;
+			width: 10px;
+			height: 10px;
+			background: #f0f;
+			animation: confetti 3s ease-out forwards;
+		}
+		
+		/* Login/Register success effects */
+		.welcome-banner {
+			background: linear-gradient(135deg, #1c8f5c 0%, #25a76d 100%);
+			color: white;
+			padding: 20px;
+			border-radius: 10px;
+			margin: 20px 0;
+			text-align: center;
+			animation: fadeInUp 0.5s ease-out;
+		}
+		
+		.welcome-banner h3 {
+			margin: 0;
+			font-size: 1.5rem;
+		}
+		
+		.welcome-banner p {
+			margin: 10px 0 0 0;
+			opacity: 0.9;
+		}
+		
+		@keyframes fadeOut {
+			from {
+				opacity: 1;
+				transform: translateY(0);
+			}
+			to {
+				opacity: 0;
+				transform: translateY(-20px);
+			}
+		}
+	</style>
+	<link rel="stylesheet" href="style.css" />
+	<link rel="icon" href="data:," />
+</head>
+<body class="bg-light">
+	<nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm">
+		<div class="container">
+			<a class="navbar-brand fw-semibold" href="#" data-route="home">Hans Shop</a>
+			<button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#nav" aria-controls="nav" aria-expanded="false" aria-label="Toggle navigation">
+				<span class="navbar-toggler-icon"></span>
+			</button>
+			<div id="nav" class="collapse navbar-collapse">
+				<ul class="navbar-nav me-auto mb-2 mb-lg-0">
+					<li class="nav-item"><a class="nav-link active" href="#" data-route="home">Home</a></li>
+					<li class="nav-item"><a class="nav-link" href="#" data-route="products">Products</a></li>
+					<li class="nav-item"><a class="nav-link d-none" href="#" data-route="admin" id="admin-nav-link">Admin</a></li>
+					<li class="nav-item"><a class="nav-link d-none" href="#" data-route="orders" id="orders-nav-link">My Orders</a></li>
+					<li class="nav-item" id="about-nav-item"><a class="nav-link" href="#" data-route="about">About Us</a></li>
+					<li class="nav-item" id="contact-nav-item"><a class="nav-link" href="#" data-route="contact">Contact</a></li>
+				</ul>
+				<div class="d-flex align-items-center gap-3">
+					<button class="btn btn-outline-primary position-relative" id="cart-btn" data-route="cart">
+						Cart
+						<span id="cart-count" class="badge bg-danger ms-1">0</span>
+					</button>
+					<div class="vr d-none d-lg-block"></div>
+					<div class="d-flex align-items-center gap-2">
+						<span id="greeting" class="text-muted small"></span>
+						<button id="login-btn" class="btn btn-success btn-sm">Log in</button>
+						<button id="logout-btn" class="btn btn-outline-secondary btn-sm d-none">Log out</button>
+					</div>
+				</div>
+			</div>
+		</div>
+	</nav>
+
+	<main class="container my-5">
+		<!-- Home -->
+		<section id="view-home" class="view">
+			<div class="p-5 mb-4 bg-white rounded-3 hero">
+				<div class="container py-5">
+					<h1 class="display-6 fw-bold">Welcome to Hans Shop</h1>
+					<p class="col-lg-8 fs-5">
+						Discover quality products at great prices. Start browsing our catalog and add your favorites to the cart.
+					</p>
+					<button class="btn btn-primary btn-lg" data-route="products">Shop now</button>
+				</div>
+			</div>
+			<h2 class="h4 mb-3">Featured Products</h2>
+			<div id="featured-list" class="row g-3"></div>
+		</section>
+
+		<!-- Products -->
+		<section id="view-products" class="view" style="display:none;">
+			<div class="products-hero rounded-4 p-4 p-lg-5 mb-4">
+				<div class="row g-4 align-items-center">
+					<div class="col-lg-7">
+						<p class="eyebrow text-uppercase mb-2">Curated catalog</p>
+						<h2 class="display-6 fw-semibold mb-3">Products</h2>
+						<p class="text-muted mb-0">
+							A minimal, distraction-free browsing experience. Search by name, focus a category, or sort by price to reach the right item faster.
+						</p>
+					</div>
+					<div class="col-lg-5">
+						<div class="d-flex flex-wrap gap-3">
+							<div class="stat-pill">
+								<span class="stat-label">Avg. rating</span>
+								<strong>4.8 / 5</strong>
+							</div>
+							<div class="stat-pill">
+								<span class="stat-label">Free returns</span>
+								<strong>30 days</strong>
+							</div>
+							<div class="stat-pill">
+								<span class="stat-label">Carbon neutral</span>
+								<strong>Shipping</strong>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<div class="card product-filter-card border-0 shadow-sm mb-4">
+				<div class="card-body">
+					<div class="row g-3 align-items-end">
+						<div class="col-lg-5">
+							<label class="form-label small text-uppercase fw-semibold">Search</label>
+							<input type="text" id="product-search" class="form-control form-control-lg" placeholder="Search products..." />
+						</div>
+						<div class="col-lg-4">
+							<label class="form-label small text-uppercase fw-semibold">Category</label>
+							<input type="text" id="product-category-filter" class="form-control form-control-lg" placeholder="Try “Laptop”, “Accessories”, …" />
+						</div>
+						<div class="col-lg-3">
+							<label class="form-label small text-uppercase fw-semibold">Sort</label>
+							<select id="product-sort" class="form-select form-select-lg">
+								<option value="featured">Featured</option>
+								<option value="price-asc">Price: Low to High</option>
+								<option value="price-desc">Price: High to Low</option>
+								<option value="stock-desc">Stock: High to Low</option>
+							</select>
+						</div>
+						<div class="col-12 d-flex justify-content-between flex-wrap gap-2">
+							<small class="text-muted">Tip: combine search + category for faster discovery.</small>
+							<button type="button" class="btn btn-link text-decoration-none p-0 fw-semibold" id="product-reset">Reset filters</button>
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<div id="product-list" class="row g-4"></div>
+		</section>
+
+		<!-- Cart -->
+		<section id="view-cart" class="view" style="display:none;">
+			<h2 class="h4 mb-3">Shopping Cart</h2>
+			<ul id="cart" class="list-group mb-3"></ul>
+			<p class="fw-bold">Total: ₱<span id="total">0.00</span></p>
+
+			<div id="checkout-form" class="card p-3">
+				<h5 class="mb-3">Checkout</h5>
+				<div class="mb-2">
+					<input id="customer-name" class="form-control" placeholder="Full name" />
+				</div>
+				<div class="mb-2">
+					<input id="customer-email" type="email" class="form-control" placeholder="Email" />
+				</div>
+				<div class="mb-2">
+					<input id="customer-address" class="form-control" placeholder="Address" />
+				</div>
+				<button id="confirm-checkout" class="btn btn-success">Place Order</button>
+			</div>
+		</section>
+
+		<!-- About -->
+		<section id="view-about" class="view" style="display:none;">
+			<div class="about-hero rounded-4 p-4 p-lg-5 mb-4">
+				<div class="row g-4 align-items-center">
+					<div class="col-lg-7">
+						<p class="eyebrow text-uppercase mb-2">About Hans Shop</p>
+						<h2 class="display-6 fw-semibold mb-3">We design calmer shopping moments for tech lovers.</h2>
+						<p class="text-muted mb-4">
+							Hans Shop started as a weekend prototype to make discovering quality gadgets less overwhelming. Today, we craft curated drops, human support, and thoughtful UX so every interaction feels intentional and clutter-free.
+						</p>
+						<div class="d-flex flex-wrap gap-3">
+							<div class="about-pill">
+								<span class="stat-label">Founded</span>
+								<strong>2023</strong>
+							</div>
+							<div class="about-pill">
+								<span class="stat-label">Products curated</span>
+								<strong>320+</strong>
+							</div>
+							<div class="about-pill">
+								<span class="stat-label">Community</span>
+								<strong>15K+ shoppers</strong>
+							</div>
+						</div>
+					</div>
+					<div class="col-lg-5">
+						<div class="about-stats-card p-4">
+							<p class="text-uppercase small fw-semibold text-muted mb-3">What drives the project</p>
+							<ul class="about-list mb-4">
+								<li>Transparent pricing & stock visibility</li>
+								<li>Research-backed product picks</li>
+								<li>Friendly support in under 2 hours</li>
+							</ul>
+							<div class="d-flex gap-4 flex-wrap">
+								<div>
+									<p class="display-6 fw-semibold mb-0 text-primary">92%</p>
+									<small class="text-muted">Repeat purchase rate</small>
+								</div>
+								<div>
+									<p class="display-6 fw-semibold mb-0 text-primary">48 hr</p>
+									<small class="text-muted">Avg. fulfillment</small>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<div class="row g-4">
+				<div class="col-md-4">
+					<div class="about-grid-card h-100 p-4">
+						<p class="eyebrow mb-2">Vision</p>
+						<h5 class="fw-semibold mb-3">A trusted hub for mindful tech ownership.</h5>
+						<p class="text-muted mb-0">
+							We imagine an ecommerce space where every gadget is vetted for longevity, sustainability, and actual usefulness—no hype, just products that elevate daily rituals.
+						</p>
+					</div>
+				</div>
+				<div class="col-md-4">
+					<div class="about-grid-card h-100 p-4">
+						<p class="eyebrow mb-2">Mission</p>
+						<h5 class="fw-semibold mb-3">Humanize digital shopping.</h5>
+						<ul class="about-list mb-0">
+							<li>Curate compact collections that solve real problems.</li>
+							<li>Guide shoppers with transparent specs, demos, and stories.</li>
+							<li>Deliver joyful packaging and proactive support.</li>
+						</ul>
+					</div>
+				</div>
+				<div class="col-md-4">
+					<div class="about-grid-card h-100 p-4">
+						<p class="eyebrow mb-2">Goals</p>
+						<h5 class="fw-semibold mb-3">What we’re building this year.</h5>
+						<ul class="about-list mb-0">
+							<li>Launch a green logistics program with reusable mailers.</li>
+							<li>Publish quarterly impact reports for community trust.</li>
+							<li>Open-source our storefront starter kit for indie sellers.</li>
+						</ul>
+					</div>
+				</div>
+			</div>
+		</section>
+
+		<!-- Orders -->
+		<section id="view-orders" class="view" style="display:none;">
+			<h2 class="h4 mb-3">My Orders</h2>
+			<div id="orders-list" class="row g-3"></div>
+		</section>
+
+		<!-- Admin Panel -->
+		<section id="view-admin" class="view" style="display:none;">
+			<h2 class="h4 mb-3">Admin Panel</h2>
+			
+			<!-- User Management -->
+			<div class="card mb-3">
+				<div class="card-header d-flex justify-content-between align-items-center">
+					<h5 class="mb-0">User Management</h5>
+					<button class="btn btn-success btn-sm" id="create-user-btn">Create New User</button>
+				</div>
+				<div class="card-body">
+					<div id="admin-users-list"></div>
+				</div>
+			</div>
+			
+			<!-- Product Management -->
+			<div class="card mb-3">
+				<div class="card-header d-flex justify-content-between align-items-center">
+					<h5 class="mb-0">Product Management</h5>
+					<button class="btn btn-primary btn-sm" id="add-product-btn">Add New Product</button>
+				</div>
+				<div class="card-body">
+					<div id="admin-products-list" class="row g-3"></div>
+				</div>
+			</div>
+			
+			<!-- Orders Management -->
+			<div class="card">
+				<div class="card-header">
+					<h5 class="mb-0">All Orders</h5>
+				</div>
+				<div class="card-body">
+					<div id="admin-orders-list"></div>
+				</div>
+			</div>
+		</section>
+
+		<!-- Contact -->
+		<section id="view-contact" class="view" style="display:none;">
+			<h2 class="h4 mb-3">Contact Us</h2>
+			<div class="row g-3">
+				<div class="col-lg-6">
+					<div class="card card-body h-100">
+						<form id="contact-form">
+							<div class="mb-2">
+								<input class="form-control" id="contact-name" placeholder="Your name" />
+							</div>
+							<div class="mb-2">
+								<input class="form-control" id="contact-email" type="email" placeholder="Your email" />
+							</div>
+							<div class="mb-2">
+								<textarea class="form-control" id="contact-message" rows="4" placeholder="Message"></textarea>
+							</div>
+							<button class="btn btn-primary" type="submit">Send</button>
+						</form>
+					</div>
+				</div>
+				<div class="col-lg-6">
+					<div class="ratio ratio-4x3">
+						<iframe
+							title="Our location"
+							style="border:0;"
+							loading="lazy"
+							referrerpolicy="no-referrer-when-downgrade"
+							src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3152.0288304434247!2d-122.419415!3d37.774929!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x8085809c5b555555%3A0xaaaaaaaaaaaaaaaa!2sCity%20Center!5e0!3m2!1sen!2sus!4v1680000000000">
+						</iframe>
+					</div>
+				</div>
+			</div>
+		</section>
+	</main>
+
+	<!-- Login Modal -->
+	<div class="modal fade" id="loginModal" tabindex="-1" aria-hidden="true">
+		<div class="modal-dialog">
+			<div class="modal-content">
+				<div class="modal-header">
+					<h5 class="modal-title">Log in</h5>
+					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+				</div>
+				<div class="modal-body">
+					<div class="auth-modal">
+						<div class="auth-copy">
+							<p class="eyebrow text-uppercase mb-2">Welcome back</p>
+							<h6 class="fw-semibold mb-2">Log in to keep shopping without friction.</h6>
+							<p class="text-muted small mb-3">Save your cart, track orders, and enjoy personalized recommendations.</p>
+							<ul class="auth-benefits">
+								<li>Faster checkout and synced carts</li>
+								<li>Order tracking & instant receipts</li>
+								<li>Priority support for members</li>
+							</ul>
+						</div>
+						<div class="auth-form">
+							<div id="login-error" class="alert alert-danger d-none" role="alert"></div>
+							<div class="mb-3">
+								<label for="login-email" class="form-label small text-uppercase fw-semibold">Email</label>
+								<input id="login-email" type="email" class="form-control form-control-lg" placeholder="your@email.com" autocomplete="email" required />
+								<div class="invalid-feedback">Email is required. Please enter a valid email.</div>
+							</div>
+							<div class="mb-3">
+								<label for="login-password" class="form-label small text-uppercase fw-semibold">Password</label>
+								<input id="login-password" type="password" class="form-control form-control-lg" placeholder="••••••••" autocomplete="current-password" required />
+								<div class="invalid-feedback">Password is required (min 6 characters).</div>
+							</div>
+							<small class="text-muted">Secure authentication powered by Hans Shop.</small>
+						</div>
+					</div>
+				</div>
+				<div class="modal-footer">
+					<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+					<button id="login-submit" type="button" class="btn btn-primary">Log in</button>
+					<button type="button" class="btn btn-link" id="show-register">Don't have an account? Register</button>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<!-- Registration Modal -->
+	<div class="modal fade" id="registerModal" tabindex="-1" aria-hidden="true">
+		<div class="modal-dialog">
+			<div class="modal-content">
+				<div class="modal-header">
+					<h5 class="modal-title">Register</h5>
+					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+				</div>
+				<div class="modal-body">
+					<div class="auth-modal">
+						<div class="auth-copy">
+							<p class="eyebrow text-uppercase mb-2">Create account</p>
+							<h6 class="fw-semibold mb-2">A calmer way to shop smart.</h6>
+							<p class="text-muted small mb-3">Set up your profile in seconds and unlock curated drops, saved preferences, and faster delivery.</p>
+							<ul class="auth-benefits">
+								<li>Personalized product picks</li>
+								<li>Early access to limited drops</li>
+								<li>One-tap reorder histories</li>
+							</ul>
+						</div>
+						<div class="auth-form">
+							<div id="register-error" class="alert alert-danger d-none" role="alert"></div>
+							<div class="mb-3">
+								<label for="register-name" class="form-label small text-uppercase fw-semibold">Full name</label>
+								<input id="register-name" type="text" class="form-control form-control-lg" placeholder="Jane Dela Cruz" required />
+								<div class="invalid-feedback">Name is required.</div>
+							</div>
+							<div class="mb-3">
+								<label for="register-email" class="form-label small text-uppercase fw-semibold">Email</label>
+								<input id="register-email" type="email" class="form-control form-control-lg" placeholder="you@example.com" autocomplete="email" required />
+								<div class="invalid-feedback">Email is required. Please enter a valid email.</div>
+							</div>
+							<div class="mb-3">
+								<label for="register-password" class="form-label small text-uppercase fw-semibold">Password</label>
+								<input id="register-password" type="password" class="form-control form-control-lg" placeholder="At least 6 characters" autocomplete="new-password" required />
+								<div class="invalid-feedback">Password is required (min 6 characters).</div>
+							</div>
+							<div class="mb-3">
+								<label for="register-role" class="form-label small text-uppercase fw-semibold">Account type</label>
+								<select id="register-role" class="form-select form-select-lg" required>
+									<option value="User" selected>User</option>
+									<option value="Admin">Admin</option>
+								</select>
+								<small class="text-muted d-block mt-1" id="role-help-text">Select your account type. Admin accounts require special privileges.</small>
+							</div>
+							<small class="text-muted">By registering, you agree to our terms and conditions.</small>
+						</div>
+					</div>
+				</div>
+				<div class="modal-footer">
+					<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+					<button id="register-submit" type="button" class="btn btn-success">Register</button>
+					<button type="button" class="btn btn-link" id="show-login">Already have an account? Log in</button>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<!-- Product Form Modal (Admin) -->
+	<div class="modal fade" id="productFormModal" tabindex="-1" aria-hidden="true">
+		<div class="modal-dialog modal-lg">
+			<div class="modal-content">
+				<div class="modal-header">
+					<h5 class="modal-title" id="product-form-title">Add Product</h5>
+					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+				</div>
+				<div class="modal-body">
+					<div id="product-form-error" class="alert alert-danger d-none" role="alert"></div>
+					<form id="product-form">
+						<input type="hidden" id="product-id" />
+						<div class="mb-3">
+							<label class="form-label">Product Name</label>
+							<input type="text" class="form-control" id="product-name" required />
+						</div>
+						<div class="mb-3">
+							<label class="form-label">Description</label>
+							<textarea class="form-control" id="product-description" rows="3" required></textarea>
+						</div>
+						<div class="row">
+							<div class="col-md-6 mb-3">
+								<label class="form-label">Price</label>
+								<input type="number" step="0.01" class="form-control" id="product-price" required />
+							</div>
+							<div class="col-md-6 mb-3">
+								<label class="form-label">Stock</label>
+								<input type="number" class="form-control" id="product-stock" required />
+							</div>
+						</div>
+						<div class="mb-3">
+							<label class="form-label">Category</label>
+							<input type="text" class="form-control" id="product-category" required />
+						</div>
+						<div class="mb-3">
+							<label class="form-label">Image</label>
+							<input type="file" class="form-control" id="product-image" accept="image/*" />
+							<small class="text-muted">Leave empty to keep current image or use image URL below</small>
+						</div>
+						<div class="mb-3">
+							<label class="form-label">Image URL (if not uploading file)</label>
+							<input type="url" class="form-control" id="product-image-url" />
+						</div>
+					</form>
+				</div>
+				<div class="modal-footer">
+					<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+					<button type="button" class="btn btn-primary" id="product-form-submit">Save Product</button>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<!-- Toast Notification Container -->
+	<div class="toast-container" id="toast-container"></div>
+	
+	<!-- Confetti Container -->
+	<div class="confetti-container" id="confetti-container"></div>
+
+	<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+	<script type="module" src="script.js"></script>
+</body>
+</html>
+

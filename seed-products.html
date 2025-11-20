@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Seed Products - Admin Tool</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <style>
+        body {
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            max-width: 800px;
+        }
+        .product-item {
+            padding: 10px;
+            margin: 5px 0;
+            background: white;
+            border-radius: 5px;
+            border-left: 4px solid #007bff;
+        }
+        .success {
+            border-left-color: #28a745;
+        }
+        .error {
+            border-left-color: #dc3545;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="mb-4">🌱 Seed Products to Database</h1>
+        
+        <div class="card mb-4">
+            <div class="card-body">
+                <h5>Admin Login Required</h5>
+                <p class="text-muted">You need to be logged in as an Admin to seed products.</p>
+                <div class="mb-3">
+                    <label class="form-label">Email:</label>
+                    <input type="email" id="admin-email" class="form-control" placeholder="admin@example.com" />
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Password:</label>
+                    <input type="password" id="admin-password" class="form-control" placeholder="Your password" />
+                </div>
+                <button class="btn btn-primary" onclick="loginAdmin()">Login as Admin</button>
+            </div>
+        </div>
+
+        <div id="seed-section" class="d-none">
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h5>Ready to Seed Products</h5>
+                    <p>This will add 30 products to your database. Click the button below to start.</p>
+                    <button class="btn btn-success btn-lg" onclick="seedProducts()">🌱 Seed 30 Products</button>
+                </div>
+            </div>
+
+            <div id="progress" class="card">
+                <div class="card-body">
+                    <h5>Progress</h5>
+                    <div id="progress-list"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE_URL = 'http://localhost:5000/api';
+        let authToken = '';
+
+        const products = [
+            { name: "Samsung Galaxy S24 Ultra", description: "Latest flagship smartphone with 200MP camera, Snapdragon 8 Gen 3, and S Pen support", price: 79990, category: "Smartphones", stock: 50, image: "https://images.samsung.com/is/image/samsung/p6pim/ph/2401/gallery/ph-galaxy-s24-s928-sm-s928bzkhphl-539126185" },
+            { name: "iPhone 15 Pro Max", description: "Apple's premium smartphone with A17 Pro chip, titanium design, and ProRes video", price: 84990, category: "Smartphones", stock: 45, image: "https://store.storeimages.cdn-apple.com/8756/as-images.apple.com/is/iphone-15-pro-max-natural-titanium-select" },
+            { name: "MacBook Pro 16-inch M3", description: "Powerful laptop with M3 chip, 16-inch Liquid Retina XDR display, up to 22 hours battery", price: 149990, category: "Laptops", stock: 30, image: "https://store.storeimages.cdn-apple.com/8756/as-images.apple.com/is/mbp16-spacegray-select-202310" },
+            { name: "Dell XPS 15", description: "Premium Windows laptop with Intel Core i9, 15.6-inch OLED display, NVIDIA RTX graphics", price: 129990, category: "Laptops", stock: 25, image: "https://i.dell.com/is/image/DellContent/content/dam/ss2/product-images/dell-client-products/notebooks/xps-notebooks/xps-15-9530/media-gallery/notebook-xps-15-9530-nt-black-gallery-1.psd" },
+            { name: "Sony WH-1000XM5 Headphones", description: "Industry-leading noise cancellation, 30-hour battery, premium sound quality", price: 19990, category: "Audio", stock: 60, image: "https://www.sony.com.ph/image/4c48d1c0c8c0b3c8c0b3c8c0b3c8c0b3" },
+            { name: "AirPods Pro 2", description: "Active Noise Cancellation, Spatial Audio, MagSafe charging case", price: 14990, category: "Audio", stock: 80, image: "https://store.storeimages.cdn-apple.com/8756/as-images.apple.com/is/MQD83" },
+            { name: "Samsung 55-inch QLED 4K TV", description: "Quantum Dot technology, HDR10+, Smart TV with Tizen OS", price: 59990, category: "TVs", stock: 20, image: "https://images.samsung.com/is/image/samsung/p6pim/ph/qe55q80cakxxp/gallery/ph-qled-4k-q80c-qe55q80cakxxp-536866234" },
+            { name: "LG 65-inch OLED TV", description: "Perfect black, infinite contrast, Dolby Vision IQ, webOS smart platform", price: 89990, category: "TVs", stock: 15, image: "https://www.lg.com/ph/images/tvs/md07523468/gallery/OLED65C3PSA_350_D.jpg" },
+            { name: "Nintendo Switch OLED", description: "7-inch OLED screen, enhanced audio, 64GB internal storage", price: 19990, category: "Gaming", stock: 40, image: "https://www.nintendo.com/content/dam/noa/en_US/hardware/switch/switch-oled/switch-oled-hero.jpg" },
+            { name: "PlayStation 5", description: "Ultra-high speed SSD, ray tracing, 4K gaming, DualSense wireless controller", price: 29990, category: "Gaming", stock: 35, image: "https://gmedia.playstation.com/is/image/SIEPDC/ps5-product-thumbnail-01-en-14sep21" },
+            { name: "Xbox Series X", description: "12 Teraflops of power, 4K gaming, 1TB SSD, backward compatibility", price: 27990, category: "Gaming", stock: 30, image: "https://compass-ssl.xbox.com/assets/83/53/83534a33-99c2-47dc-9155-f6e0b7c5b3a1.png" },
+            { name: "Canon EOS R6 Mark II", description: "24.2MP full-frame mirrorless camera, 4K video, 12fps continuous shooting", price: 149990, category: "Cameras", stock: 18, image: "https://www.canon.com.ph/-/media/images/products/cameras/eos-r6-mark-ii/eos-r6-mark-ii-hero.png" },
+            { name: "GoPro Hero 12", description: "5.3K video, HyperSmooth 6.0 stabilization, waterproof up to 33ft", price: 24990, category: "Cameras", stock: 50, image: "https://gopro.com/content/dam/help/hero12-black/media/hero12-black-product.png" },
+            { name: "iPad Pro 12.9-inch M2", description: "M2 chip, Liquid Retina XDR display, Apple Pencil support, up to 2TB storage", price: 69990, category: "Tablets", stock: 25, image: "https://store.storeimages.cdn-apple.com/8756/as-images.apple.com/is/ipad-pro-12-select-202210" },
+            { name: "Samsung Galaxy Tab S9 Ultra", description: "14.6-inch Dynamic AMOLED 2X, Snapdragon 8 Gen 2, S Pen included", price: 79990, category: "Tablets", stock: 20, image: "https://images.samsung.com/is/image/samsung/p6pim/ph/sm-x916bzahphl/gallery/ph-galaxy-tab-s9-ultra-x916-sm-x916bzahphl-536866234" },
+            { name: "Apple Watch Series 9", description: "S9 SiP chip, Always-On Retina display, ECG app, 18-hour battery", price: 24990, category: "Wearables", stock: 55, image: "https://store.storeimages.cdn-apple.com/8756/as-images.apple.com/is/watch-series9-aluminum-midnight-nc-45mm" },
+            { name: "Samsung Galaxy Watch 6 Classic", description: "Rotating bezel, sleep tracking, body composition analysis, 40-hour battery", price: 19990, category: "Wearables", stock: 45, image: "https://images.samsung.com/is/image/samsung/p6pim/ph/sm-r955fzkaxph/gallery/ph-galaxy-watch6-classic-r955-sm-r955fzkaxph-536866234" },
+            { name: "Dyson V15 Detect Vacuum", description: "Laser dust detection, HEPA filtration, 60-minute runtime, cordless", price: 39990, category: "Home Appliances", stock: 30, image: "https://www.dyson.com.ph/dam/jcr:1234567890abcdef/dyson-v15-detect.png" },
+            { name: "Instant Pot Duo 7-in-1", description: "Pressure cooker, slow cooker, rice cooker, steamer, sauté pan, yogurt maker, warmer", price: 8990, category: "Home Appliances", stock: 70, image: "https://www.instantpot.com/wp-content/uploads/2021/01/duo-7-in-1-6qt.png" },
+            { name: "Nespresso Vertuo Next", description: "Centrifusion technology, 5 cup sizes, automatic capsule recognition", price: 12990, category: "Home Appliances", stock: 40, image: "https://www.nespresso.com/shared_res/mos/free_html/ph/ph/vertuo-next-machine.png" },
+            { name: "Fitbit Charge 6", description: "Heart rate tracking, sleep stages, 7-day battery, built-in GPS", price: 8990, category: "Wearables", stock: 60, image: "https://www.fitbit.com/global/content/dam/fitbit/global/pdp/devices/charge-6/charge-6-hero.png" },
+            { name: "JBL Flip 6 Bluetooth Speaker", description: "Waterproof, 12-hour playtime, PartyBoost for stereo sound", price: 6990, category: "Audio", stock: 75, image: "https://www.jbl.com.ph/dw/image/v2/AAUJ_PRD/on/demandware.static/-/Sites-masterCatalog_Harman/default/dw1234567890/images/JBL/FLIP6/FLIP6_Product%20Image_Hero_Blue.png" },
+            { name: "Logitech MX Master 3S Mouse", description: "Darkfield sensor, 8K DPI, 70-day battery, multi-device connectivity", price: 5990, category: "Accessories", stock: 80, image: "https://www.logitech.com/content/dam/logitech/en/products/mice/mx-master-3s/gallery/mx-master-3s-mouse-top-view-graphite.png" },
+            { name: "Keychron K8 Pro Keyboard", description: "Mechanical switches, RGB backlight, Bluetooth 5.1, hot-swappable", price: 5990, category: "Accessories", stock: 50, image: "https://cdn.shopify.com/s/files/1/0059/0630/1017/products/k8-pro-hero_1200x1200.png" },
+            { name: "Samsung 980 PRO 2TB SSD", description: "PCIe 4.0 NVMe, read speeds up to 7,000 MB/s, 5-year warranty", price: 12990, category: "Storage", stock: 40, image: "https://images.samsung.com/is/image/samsung/p6pim/ph/mz-v8p2t0bw/gallery/ph-980-pro-pcie-4-0-nvme-m2-ssd-mz-v8p2t0bw-536866234" },
+            { name: "WD My Passport 4TB External HDD", description: "USB 3.0, password protection, automatic backup software included", price: 5990, category: "Storage", stock: 65, image: "https://www.westerndigital.com/content/dam/store/en-us/assets/products/external-drives/my-passport-usb-3-0/highlights/my-passport-usb-3-0-4tb-black-front.png" },
+            { name: "Anker PowerCore 26800 Power Bank", description: "26,800mAh capacity, PowerIQ technology, 3 USB ports, fast charging", price: 3990, category: "Accessories", stock: 90, image: "https://www.anker.com/products/a1281" },
+            { name: "Belkin BoostCharge Pro 3-in-1", description: "Wireless charging pad for iPhone, AirPods, and Apple Watch simultaneously", price: 7990, category: "Accessories", stock: 45, image: "https://www.belkin.com/ph/products/wireless-chargers/boostcharge-pro-3-in-1-wireless-charging-pad/WIZ017" },
+            { name: "Ring Video Doorbell Pro 2", description: "1080p HD video, motion detection, two-way talk, works with Alexa", price: 19990, category: "Smart Home", stock: 35, image: "https://www.ring.com/products/video-doorbell-pro-2" },
+            { name: "Philips Hue Starter Kit", description: "3 color bulbs, bridge, app control, works with Alexa and Google Home", price: 8990, category: "Smart Home", stock: 50, image: "https://www.philips-hue.com/en-us/products/entertainment/hue-play-hdmi-sync-box" },
+            { name: "DJI Mini 4 Pro Drone", description: "4K/60fps video, 3-way obstacle sensing, 34-minute flight time, ActiveTrack 6.0", price: 89990, category: "Drones", stock: 15, image: "https://www.dji.com/ph/mini-4-pro" },
+            { name: "Oculus Quest 3 VR Headset", description: "Mixed reality, 128GB storage, Touch Plus controllers, wireless freedom", price: 49990, category: "Gaming", stock: 25, image: "https://www.meta.com/quest/products/quest-3/" }
+        ];
+
+        async function loginAdmin() {
+            const email = document.getElementById('admin-email').value;
+            const password = document.getElementById('admin-password').value;
+
+            if (!email || !password) {
+                alert('Please enter email and password');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    alert('Login failed: ' + (data.message || 'Invalid credentials'));
+                    return;
+                }
+
+                if (data.user.role !== 'Admin') {
+                    alert('You must be an Admin to seed products');
+                    return;
+                }
+
+                authToken = data.token;
+                document.getElementById('seed-section').classList.remove('d-none');
+                alert('✅ Admin login successful! You can now seed products.');
+            } catch (error) {
+                alert('Error: ' + error.message);
+            }
+        }
+
+        async function seedProducts() {
+            const progressList = document.getElementById('progress-list');
+            progressList.innerHTML = '<p>Starting to seed products...</p>';
+
+            let successCount = 0;
+            let errorCount = 0;
+
+            for (let i = 0; i < products.length; i++) {
+                const product = products[i];
+                
+                try {
+                    const formData = new FormData();
+                    formData.append('name', product.name);
+                    formData.append('description', product.description);
+                    formData.append('price', product.price);
+                    formData.append('category', product.category);
+                    formData.append('stock', product.stock);
+                    formData.append('image', product.image);
+
+                    const response = await fetch(`${API_BASE_URL}/products`, {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${authToken}`
+                        },
+                        body: formData
+                    });
+
+                    const data = await response.json();
+
+                    if (response.ok) {
+                        successCount++;
+                        progressList.innerHTML += `<div class="product-item success">✅ ${product.name} - Added successfully</div>`;
+                    } else {
+                        errorCount++;
+                        progressList.innerHTML += `<div class="product-item error">❌ ${product.name} - ${data.error || data.message || 'Failed'}</div>`;
+                    }
+                } catch (error) {
+                    errorCount++;
+                    progressList.innerHTML += `<div class="product-item error">❌ ${product.name} - Error: ${error.message}</div>`;
+                }
+
+                // Small delay to avoid overwhelming the server
+                await new Promise(resolve => setTimeout(resolve, 100));
+            }
+
+            progressList.innerHTML += `<div class="alert alert-info mt-3"><strong>Complete!</strong> Successfully added ${successCount} products. ${errorCount > 0 ? errorCount + ' failed.' : ''}</div>`;
+        }
+    </script>
+</body>
+</html>
+
